@@ -1,0 +1,3 @@
+yt-dlp==2023.3.4
+PyGObject==3.44.1
+pycairo==1.23.0
