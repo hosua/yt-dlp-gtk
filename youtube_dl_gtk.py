@@ -3,6 +3,9 @@ import gi
 import os
 import sys
 
+import subprocess
+from threading import Thread
+
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk
 import glib
@@ -45,8 +48,22 @@ def download_videos(textview: Gtk.TextView):
     text = buff.get_text(buff.get_start_iter(), buff.get_end_iter(), True)
     urls = text.splitlines()
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download(urls)
+    def dl(url):
+        file_size = 0
+        cmd = f'yt-dlp {url} -O "%(requested_formats.0.filesize+requested_formats.1.filesize)d"'
+        proc = subprocess.Popen([cmd], stdout=subprocess.PIPE, shell=True)
+        (out, err) = proc.communicate()
+        file_size = int(out.decode())
+
+        # TODO: Implement a download progress bar
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download(url)
+
+    # Spawn a thread to process download so GUI doesn't freeze
+    for url in urls:
+        dl_thread = Thread(target=dl, args=(url,))
+        dl_thread.start()
+
 
 def clear_buffer(textview: Gtk.TextView):
     buff = textview.get_buffer()
@@ -68,12 +85,6 @@ def on_activate(app):
     label_info = Gtk.Label(label="Enter links to videos you want to download in the text box.\nPlease only put one link per line.")
     textview = Gtk.TextView(editable=True) # Textbox where user enters links
     ctx = textview.get_style_context()
-
-    css = 'textview {padding: 10px 20px 10px 20px;}'
-    css_provider = Gtk.CssProvider()
-    css_provider.load_from_data(css, -1)
-
-    ctx.add_provider(css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER)
 
     scrolled_win = Gtk.ScrolledWindow()
     scrolled_win.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.ALWAYS)
