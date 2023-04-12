@@ -50,7 +50,7 @@ def download_videos(textview: Gtk.TextView):
 
     def dl(url):
         file_size = 0
-        cmd = f'yt-dlp {url} -O "%(requested_formats.0.filesize+requested_formats.1.filesize)d"'
+        cmd = f'yt-dlp \'{url}\' -O "%(requested_formats.0.filesize+requested_formats.1.filesize)d"'
         proc = subprocess.Popen([cmd], stdout=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate()
         file_size = int(out.decode())
